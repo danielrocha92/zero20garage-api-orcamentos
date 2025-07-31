@@ -1,11 +1,16 @@
 // orcamento-admin-zero20-api/server.js
 // Ponto de entrada da aplicação. Inicia o servidor.
 
-require('dotenv').config(); // Carrega as variáveis de ambiente do arquivo .env
-const app = require('./src/app'); // Importa a configuração do Express de src/app.js
-const { db } = require('./src/config/db'); // Importa a instância do Firestore de src/config/db.js
+require('dotenv').config(); 
 
-const PORT = process.env.PORT || 5000; // Define a porta, usando a variável de ambiente ou 5000 como padrão
+// Importa a configuração do Express de app.js (agora na mesma pasta que server.js no deploy)
+const app = require('./app'); 
+
+// Importa a instância do Firestore de config/db.js (agora na mesma pasta que server.js no deploy)
+const { db } = require('./config/db'); 
+
+// Define a porta, usando a variável de ambiente ou 5000 como padrão
+const PORT = process.env.PORT || 5000; 
 
 // Inicia o servidor Express. A conexão com o Firebase é feita na inicialização do 'db.js'.
 app.listen(PORT, () => {
