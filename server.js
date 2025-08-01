@@ -8,7 +8,7 @@ require('dotenv').config();
 const app = require('./src/app');
 
 // Importa a instância do Firestore de src/config/db.js
-const { db } = require('./src/config/db');
+const { db } = require('./src/config/db'); // Certifique-se de que este caminho está correto para o seu projeto
 
 // Define a porta, usando a variável de ambiente ou 5000 como padrão
 const PORT = process.env.PORT || 5000;
