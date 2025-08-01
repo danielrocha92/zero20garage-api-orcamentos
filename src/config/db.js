@@ -1,29 +1,29 @@
-// src/config/db.js
+// orcamento-admin-zero20-api/src/config/db.js
 const admin = require('firebase-admin');
+const path = require('path'); // Módulo 'path' para lidar com caminhos de arquivo
 
-const serviceAccount = {
-  projectId: process.env.FIREBASE_PROJECT_ID,
-  privateKey: process.env.FIREBASE_PRIVATE_KEY ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n') : undefined,
-  clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-};
+// Caminho para o arquivo JSON da sua chave de serviço
+// Certifique-se de que este caminho está correto em relação a este arquivo (db.js)
+const serviceAccountPath = path.resolve(__dirname, 'serviceAccountKey.json');
 
-// Adicione estes logs para depurar as variáveis
-console.log('DEBUG: serviceAccount.projectId:', serviceAccount.projectId);
-console.log('DEBUG: serviceAccount.clientEmail:', serviceAccount.clientEmail);
-// CUIDADO: NÃO LOGUE A CHAVE PRIVADA COMPLETA EM AMBIENTES DE PRODUÇÃO!
-// console.log('DEBUG: serviceAccount.privateKey (first 50 chars):', serviceAccount.privateKey ? serviceAccount.privateKey.substring(0, 50) : 'N/A');
-
+// Inicializa o Firebase Admin SDK
 try {
+  // Carrega o arquivo JSON da chave de serviço
+  const serviceAccount = require(serviceAccountPath);
+
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
   });
-  console.log('Firebase Admin SDK inicializado com sucesso.');
+  console.log('Firebase Admin SDK inicializado com sucesso usando arquivo JSON.');
 } catch (error) {
   console.error('Erro ao inicializar Firebase Admin SDK:', error.message);
+  // Se o erro for "initializeApp has already been called", ignore (pode acontecer em hot-reloads)
   if (!/already been called/.test(error.message)) {
-    process.exit(1);
+    console.error(`Verifique se o arquivo ${serviceAccountPath} existe e está correto.`);
+    process.exit(1); // Encerra o processo se houver um erro real de inicialização
   }
 }
 
-const db = admin.firestore();
-module.exports = { db };
+const db = admin.firestore(); // Obtém a instância do Firestore
+
+module.exports = { db }; // Exporta a instância do Firestore
