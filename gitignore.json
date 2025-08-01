@@ -1,0 +1,31 @@
+# Dependências do Node.js
+node_modules/
+
+# Variáveis de ambiente
+.env
+
+# Chave de serviço do Firebase (MUITO IMPORTANTE: NUNCA ENVIE ESTE ARQUIVO PARA O GITHUB PÚBLICO)
+src/config/serviceAccountKey.json
+
+# Logs de depuração do npm
+npm-debug.log*
+.npm/
+.node_repl_history
+
+# Arquivos de cache e temporários
+.DS_Store
+*.log
+*.tmp
+*.swp
+.idea/
+.vscode/
+.project
+.settings/
+.buildpath
+
+# Arquivos de cobertura de teste (se usar)
+coverage/
+
+# Arquivos de build (se gerar algum)
+build/
+dist/
