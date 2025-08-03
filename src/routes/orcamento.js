@@ -105,7 +105,7 @@ router.put('/:id', async (req, res) => {
   const { id } = req.params; // ID do documento Firestore
   const {
     cliente, telefone, veiculo, placa, ordemServico, data, tipo,
-    pecasSelecionadas, servicosSelecionados,
+    pecasSelecionadas, servicosSelecionados, // <-- Variável correta
     valorTotalPecas, valorTotalServicos, totalMaoDeObra, valorTotal,
     formaPagamento, garantia, observacoes, status
   } = req.body;
@@ -121,7 +121,7 @@ router.put('/:id', async (req, res) => {
     data,
     tipo,
     pecasSelecionadas,
-    servicosSelecionadas,
+    servicosSelecionados, // <-- CORRIGIDO AQUI: de 'servicosSelecionadas' para 'servicosSelecionados'
     valorTotalPecas,
     valorTotalServicos,
     totalMaoDeObra,
