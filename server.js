@@ -5,7 +5,7 @@
 require('dotenv').config();
 
 // Importa a configuração do Express de src/app.js
-const app = require('./src/app');
+const app = require('./app');
 
 // Importa a instância do Firestore de src/config/db.js
 const { db } = require('./src/config/db'); // Certifique-se de que este caminho está correto para o seu projeto
