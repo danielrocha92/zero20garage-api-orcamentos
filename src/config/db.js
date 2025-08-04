@@ -35,6 +35,20 @@ if (serviceAccountJsonString) {
     // Tenta parsear a string JSON limpa
     serviceAccount = JSON.parse(cleanedJsonString);
     console.log('Objeto de conta de serviço parseado de JSON com sucesso.');
+    // Adiciona log para inspecionar o objeto serviceAccount após o parseamento
+    console.log('Primeiras propriedades do objeto serviceAccount parseado:', {
+      type: serviceAccount.type,
+      project_id: serviceAccount.project_id,
+      private_key_id: serviceAccount.private_key_id,
+      private_key: serviceAccount.private_key ? serviceAccount.private_key.substring(0, 50) + '...' : 'N/A', // Trunca a chave privada
+      client_email: serviceAccount.client_email,
+      client_id: serviceAccount.client_id,
+      auth_uri: serviceAccount.auth_uri,
+      token_uri: serviceAccount.token_uri,
+      auth_provider_x509_cert_url: serviceAccount.auth_provider_x509_cert_url,
+      client_x509_cert_url: serviceAccount.client_x509_cert_url,
+      universe_domain: serviceAccount.universe_domain
+    });
   } catch (parseError) {
     console.error('ERRO: Falha ao parsear FIREBASE_SERVICE_ACCOUNT_JSON. Verifique a formatação JSON:', parseError.message);
     process.exit(1); // Sai do processo se o parseamento falhar
@@ -47,20 +61,17 @@ if (serviceAccountJsonString) {
 
 // Verificação adicional para depuração de credenciais (usando o objeto serviceAccount parseado)
 console.log('Verificando os campos obrigatórios no objeto serviceAccount...');
-console.log('Primeiras propriedades do objeto:', serviceAccount);  // Mostrando as primeiras propriedades
-
-if (!serviceAccount || !serviceAccount.projectId || serviceAccount.projectId.trim() === "") {
-  console.error('ERRO: projectId não está definido ou está vazio no objeto serviceAccount.');
-  process.exit(1); // Sai do processo se o projectId não estiver presente ou estiver vazio
-}
-
-if (!serviceAccount.privateKey) {
-  console.error('ERRO: privateKey não está definida no objeto serviceAccount.');
+if (!serviceAccount || !serviceAccount.project_id) { // CORRIGIDO: de .projectId para .project_id
+  console.error('ERRO: project_id não está definido ou está vazio no objeto serviceAccount.');
   process.exit(1);
 }
-
-if (!serviceAccount.clientEmail) {
-  console.error('ERRO: clientEmail não está definido no objeto serviceAccount.');
+if (!serviceAccount.private_key) { // CORRIGIDO: de .privateKey para .private_key
+  console.error('ERRO: private_key não está definida no objeto serviceAccount.');
+  console.error('Isso pode indicar um problema na variável de ambiente FIREBASE_SERVICE_ACCOUNT_JSON ou no parseamento.');
+  process.exit(1);
+}
+if (!serviceAccount.client_email) { // CORRIGIDO: de .clientEmail para .client_email
+  console.error('ERRO: client_email não está definido no objeto serviceAccount.');
   process.exit(1);
 }
 
