@@ -3,56 +3,49 @@
 
 const admin = require('firebase-admin');
 
-// Tenta obter a chave privada da variável de ambiente Base64
-const privateKeyBase64 = process.env.FIREBASE_PRIVATE_KEY_BASE64;
-let privateKey = undefined;
+// Tenta obter o JSON completo da conta de serviço da variável de ambiente
+const serviceAccountJsonString = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+let serviceAccount = undefined;
 
 // Adiciona log para verificar se a variável de ambiente está sendo lida
-console.log(`Verificando FIREBASE_PRIVATE_KEY_BASE64. Tamanho: ${privateKeyBase64 ? privateKeyBase64.length : 'não definida'}`);
-if (privateKeyBase64) {
-  // Loga uma parte da chave para confirmar que não está vazia, mas truncada por segurança
-  console.log(`FIREBASE_PRIVATE_KEY_BASE64 lida (início): ${privateKeyBase64.substring(0, 50)}...`);
+console.log(`Verificando FIREBASE_SERVICE_ACCOUNT_JSON. Tamanho: ${serviceAccountJsonString ? serviceAccountJsonString.length : 'não definida'}`);
+
+if (serviceAccountJsonString) {
+  // Loga uma parte da string JSON para confirmar que não está vazia, mas truncada por segurança
+  console.log(`FIREBASE_SERVICE_ACCOUNT_JSON lida (início): ${serviceAccountJsonString.substring(0, 50)}...`);
   try {
-    // Decodifica a chave privada de Base64
-    privateKey = Buffer.from(privateKeyBase64, 'base64').toString('utf8');
-    console.log('Chave privada decodificada de Base64 com sucesso.');
-  } catch (decodeError) {
-    console.error('ERRO: Falha ao decodificar FIREBASE_PRIVATE_KEY_BASE64. Verifique a formatação Base64:', decodeError.message);
-    process.exit(1); // Sai do processo se a decodificação falhar
+    // Parseia a string JSON de volta para um objeto
+    serviceAccount = JSON.parse(serviceAccountJsonString);
+    console.log('Objeto de conta de serviço parseado de JSON com sucesso.');
+  } catch (parseError) {
+    console.error('ERRO: Falha ao parsear FIREBASE_SERVICE_ACCOUNT_JSON. Verifique a formatação JSON:', parseError.message);
+    process.exit(1); // Sai do processo se o parseamento falhar
   }
 } else {
-  console.error('ERRO: FIREBASE_PRIVATE_KEY_BASE64 não está definida nas variáveis de ambiente.');
-  console.error('Por favor, defina a variável FIREBASE_PRIVATE_KEY_BASE64 no Render com o valor Base64 da sua chave privada.');
+  console.error('ERRO: FIREBASE_SERVICE_ACCOUNT_JSON não está definida nas variáveis de ambiente.');
+  console.error('Por favor, defina a variável FIREBASE_SERVICE_ACCOUNT_JSON no Render com o valor JSON stringificado da sua conta de serviço.');
   process.exit(1); // Sai do processo se a variável não estiver definida
 }
 
-const serviceAccount = {
-  projectId: process.env.FIREBASE_PROJECT_ID,
-  privateKey: privateKey, // Usa a chave decodificada
-  clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-};
-
-// Verificação adicional para depuração de credenciais
-if (!serviceAccount.projectId) {
-  console.error('ERRO: FIREBASE_PROJECT_ID não está definido nas variáveis de ambiente.');
+// Verificação adicional para depuração de credenciais (usando o objeto serviceAccount parseado)
+if (!serviceAccount || !serviceAccount.projectId) {
+  console.error('ERRO: projectId não está definido no objeto serviceAccount.');
   process.exit(1);
 }
 if (!serviceAccount.privateKey) {
-  // Esta verificação agora é redundante se o bloco 'if (privateKeyBase64)' acima funcionar corretamente,
-  // mas é mantida como um fallback de segurança.
-  console.error('ERRO: serviceAccount.privateKey está vazia após a tentativa de decodificação.');
-  console.error('Isso pode indicar um problema na variável de ambiente FIREBASE_PRIVATE_KEY_BASE64 ou na decodificação.');
+  console.error('ERRO: privateKey não está definida no objeto serviceAccount.');
+  console.error('Isso pode indicar um problema na variável de ambiente FIREBASE_SERVICE_ACCOUNT_JSON ou no parseamento.');
   process.exit(1);
 }
 if (!serviceAccount.clientEmail) {
-  console.error('ERRO: FIREBASE_CLIENT_EMAIL não está definido nas variáveis de ambiente.');
+  console.error('ERRO: clientEmail não está definido no objeto serviceAccount.');
   process.exit(1);
 }
 
 // Inicializa o Firebase Admin SDK
 try {
   admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
+    credential: admin.credential.cert(serviceAccount), // Passa o objeto serviceAccount diretamente
   });
   console.log('Firebase Admin SDK inicializado com sucesso.');
 } catch (error) {
