@@ -13,16 +13,24 @@ console.log(`Verificando FIREBASE_SERVICE_ACCOUNT_JSON. Tamanho: ${serviceAccoun
 if (serviceAccountJsonString) {
   // Loga uma parte da string JSON para confirmar que não está vazia, mas truncada por segurança
   console.log(`FIREBASE_SERVICE_ACCOUNT_JSON lida (início): ${serviceAccountJsonString.substring(0, 50)}...`);
+  // Loga os códigos ASCII dos primeiros caracteres da string bruta para depuração
+  console.log('Raw string char codes (first 10):', Array.from(serviceAccountJsonString.substring(0, 10)).map(char => char.charCodeAt(0)));
+
   try {
     // --- PASSO CRÍTICO: Limpa a string de caracteres problemáticos antes de parsear ---
-    // Remove todos os caracteres de controle ASCII, caracteres de controle estendidos,
-    // o espaço não-quebrável (\u00A0) e o Zero Width No-Break Space (\uFEFF - BOM).
-    // Em seguida, remove espaços em branco do início e do fim.
-    const cleanedJsonString = serviceAccountJsonString
-      .replace(/[\u0000-\u001F\u007F-\u009F\u00A0\uFEFF]/g, '') // Remove caracteres de controle e \u00A0, \uFEFF
-      .trim(); // Remove espaços (incluindo \r\n se estiverem nas extremidades)
+    // Remove explicitamente caracteres de retorno de carro (\r), nova linha (\n),
+    // o espaço não-quebrável (\u00A0) e o Byte Order Mark (\uFEFF)
+    // usando split().join('') para garantir a remoção de todas as ocorrências.
+    let cleanedJsonString = serviceAccountJsonString;
+    cleanedJsonString = cleanedJsonString.split('\r').join(''); // Remove todos os retornos de carro
+    cleanedJsonString = cleanedJsonString.split('\n').join(''); // Remove todas as novas linhas
+    cleanedJsonString = cleanedJsonString.split('\u00A0').join(''); // Remove todos os espaços não-quebráveis
+    cleanedJsonString = cleanedJsonString.split('\uFEFF').join(''); // Remove todos os BOM
+    cleanedJsonString = cleanedJsonString.trim(); // Remove quaisquer espaços em branco (incluindo tabs) do início e do fim
 
     console.log(`FIREBASE_SERVICE_ACCOUNT_JSON limpa (início): ${cleanedJsonString.substring(0, 50)}...`);
+    // Loga os códigos ASCII dos primeiros caracteres da string limpa para depuração
+    console.log('Cleaned string char codes (first 10):', Array.from(cleanedJsonString.substring(0, 10)).map(char => char.charCodeAt(0)));
 
     // Tenta parsear a string JSON limpa
     serviceAccount = JSON.parse(cleanedJsonString);
