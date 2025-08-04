@@ -7,70 +7,47 @@ const admin = require('firebase-admin');
 const serviceAccountJsonString = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
 let serviceAccount = undefined;
 
-// Adiciona log para verificar se a variável de ambiente está sendo lida
+// Verifica se a variável de ambiente FIREBASE_SERVICE_ACCOUNT_JSON foi lida corretamente
 console.log(`Verificando FIREBASE_SERVICE_ACCOUNT_JSON. Tamanho: ${serviceAccountJsonString ? serviceAccountJsonString.length : 'não definida'}`);
 
 if (serviceAccountJsonString) {
-  // Loga uma parte da string JSON para confirmar que não está vazia, mas truncada por segurança
+  // Loga uma parte da string JSON para confirmar que não está vazia (sem dados sensíveis)
   console.log(`FIREBASE_SERVICE_ACCOUNT_JSON lida (início): ${serviceAccountJsonString.substring(0, 50)}...`);
-  // Loga os códigos ASCII dos primeiros caracteres da string bruta para depuração
-  console.log('Raw string char codes (first 10):', Array.from(serviceAccountJsonString.substring(0, 10)).map(char => char.charCodeAt(0)));
 
   try {
-    // --- PASSO CRÍTICO: Limpa a string de caracteres problemáticos antes de parsear ---
-    // Remove explicitamente caracteres de retorno de carro (\r), nova linha (\n),
-    // o espaço não-quebrável (\u00A0) e o Byte Order Mark (\uFEFF)
-    // usando split().join('') para garantir a remoção de todas as ocorrências.
-    let cleanedJsonString = serviceAccountJsonString;
-    cleanedJsonString = cleanedJsonString.split('\r').join(''); // Remove todos os retornos de carro
-    cleanedJsonString = cleanedJsonString.split('\n').join(''); // Remove todas as novas linhas
-    cleanedJsonString = cleanedJsonString.split('\u00A0').join(''); // Remove todos os espaços não-quebráveis
-    cleanedJsonString = cleanedJsonString.split('\uFEFF').join(''); // Remove todos os BOM
-    cleanedJsonString = cleanedJsonString.trim(); // Remove quaisquer espaços em branco (incluindo tabs) do início e do fim
-
-    console.log(`FIREBASE_SERVICE_ACCOUNT_JSON limpa (início): ${cleanedJsonString.substring(0, 50)}...`);
-    // Loga os códigos ASCII dos primeiros caracteres da string limpa para depuração
-    console.log('Cleaned string char codes (first 10):', Array.from(cleanedJsonString.substring(0, 10)).map(char => char.charCodeAt(0)));
+    // Limpeza da string para garantir que caracteres problemáticos sejam removidos
+    let cleanedJsonString = serviceAccountJsonString
+      .split('\r').join('')  // Remove todos os retornos de carro
+      .split('\n').join('')  // Remove todas as novas linhas
+      .split('\u00A0').join('')  // Remove todos os espaços não-quebráveis
+      .split('\uFEFF').join('')  // Remove todos os BOM
+      .trim();  // Remove quaisquer espaços extras no começo e no fim
 
     // Tenta parsear a string JSON limpa
     serviceAccount = JSON.parse(cleanedJsonString);
-    console.log('Objeto de conta de serviço parseado de JSON com sucesso.');
-    // Adiciona log para inspecionar o objeto serviceAccount após o parseamento
-    console.log('Primeiras propriedades do objeto serviceAccount parseado:', {
-      type: serviceAccount.type,
-      project_id: serviceAccount.project_id,
-      private_key_id: serviceAccount.private_key_id,
-      private_key: serviceAccount.private_key ? serviceAccount.private_key.substring(0, 50) + '...' : 'N/A', // Trunca a chave privada
-      client_email: serviceAccount.client_email,
-      client_id: serviceAccount.client_id,
-      auth_uri: serviceAccount.auth_uri,
-      token_uri: serviceAccount.token_uri,
-      auth_provider_x509_cert_url: serviceAccount.auth_provider_x509_cert_url,
-      client_x509_cert_url: serviceAccount.client_x509_cert_url,
-      universe_domain: serviceAccount.universe_domain
-    });
+    console.log('Conta de serviço parseada com sucesso.');
+
   } catch (parseError) {
     console.error('ERRO: Falha ao parsear FIREBASE_SERVICE_ACCOUNT_JSON. Verifique a formatação JSON:', parseError.message);
     process.exit(1); // Sai do processo se o parseamento falhar
   }
 } else {
   console.error('ERRO: FIREBASE_SERVICE_ACCOUNT_JSON não está definida nas variáveis de ambiente.');
-  console.error('Por favor, defina a variável FIREBASE_SERVICE_ACCOUNT_JSON no Render com o valor JSON stringificado da sua conta de serviço.');
+  console.error('Por favor, defina a variável FIREBASE_SERVICE_ACCOUNT_JSON com o valor JSON stringificado da sua conta de serviço.');
   process.exit(1); // Sai do processo se a variável não estiver definida
 }
 
-// Verificação adicional para depuração de credenciais (usando o objeto serviceAccount parseado)
+// Verificação dos campos obrigatórios no objeto serviceAccount
 console.log('Verificando os campos obrigatórios no objeto serviceAccount...');
-if (!serviceAccount || !serviceAccount.project_id) { // CORRIGIDO: de .projectId para .project_id
+if (!serviceAccount || !serviceAccount.project_id) {
   console.error('ERRO: project_id não está definido ou está vazio no objeto serviceAccount.');
   process.exit(1);
 }
-if (!serviceAccount.private_key) { // CORRIGIDO: de .privateKey para .private_key
+if (!serviceAccount.private_key) {
   console.error('ERRO: private_key não está definida no objeto serviceAccount.');
-  console.error('Isso pode indicar um problema na variável de ambiente FIREBASE_SERVICE_ACCOUNT_JSON ou no parseamento.');
   process.exit(1);
 }
-if (!serviceAccount.client_email) { // CORRIGIDO: de .clientEmail para .client_email
+if (!serviceAccount.client_email) {
   console.error('ERRO: client_email não está definido no objeto serviceAccount.');
   process.exit(1);
 }
