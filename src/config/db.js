@@ -14,8 +14,15 @@ if (serviceAccountJsonString) {
   // Loga uma parte da string JSON para confirmar que não está vazia, mas truncada por segurança
   console.log(`FIREBASE_SERVICE_ACCOUNT_JSON lida (início): ${serviceAccountJsonString.substring(0, 50)}...`);
   try {
-    // Parseia a string JSON de volta para um objeto
-    serviceAccount = JSON.parse(serviceAccountJsonString);
+    // --- PASSO CRÍTICO: Limpa a string de caracteres problemáticos antes de parsear ---
+    // Remove todos os caracteres de controle (incluindo \r, \n, tabs, etc.)
+    // e depois remove espaços em branco do início e do fim.
+    const cleanedJsonString = serviceAccountJsonString.replace(/[\u0000-\u001F\u007F-\u009F]/g, '').trim();
+
+    console.log(`FIREBASE_SERVICE_ACCOUNT_JSON limpa (início): ${cleanedJsonString.substring(0, 50)}...`);
+
+    // Tenta parsear a string JSON limpa
+    serviceAccount = JSON.parse(cleanedJsonString);
     console.log('Objeto de conta de serviço parseado de JSON com sucesso.');
   } catch (parseError) {
     console.error('ERRO: Falha ao parsear FIREBASE_SERVICE_ACCOUNT_JSON. Verifique a formatação JSON:', parseError.message);
