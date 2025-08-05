@@ -20,7 +20,7 @@ router.get('/', async (req, res) => {
     res.json(orcamentos);
   } catch (err) {
     console.error('Erro ao obter orçamentos:', err.message);
-    res.status(500).send('Erro no Servidor ao obter orçamentos');
+    res.status(500).json({ erro: 'Erro no servidor ao obter orçamentos' });
   }
 });
 
@@ -38,7 +38,7 @@ router.get('/:id', async (req, res) => {
     res.json({ id: doc.id, ...doc.data() });
   } catch (err) {
     console.error('Erro ao obter orçamento por ID:', err.message);
-    res.status(500).send('Erro no Servidor ao obter orçamento');
+    res.status(500).json({ erro: 'Erro no servidor ao obter orçamento por ID' });
   }
 });
 
@@ -94,7 +94,7 @@ router.post('/', async (req, res) => {
     res.status(201).json({ id: newDoc.id, ...newDoc.data() }); // 201 Created
   } catch (err) {
     console.error('Erro ao criar orçamento:', err.message);
-    res.status(500).send('Erro no Servidor ao criar orçamento');
+    res.status(500).json({ erro: 'Erro no servidor ao criar orçamento' });
   }
 });
 
@@ -157,7 +157,7 @@ router.put('/:id', async (req, res) => {
     res.json({ id: updatedDoc.id, ...updatedDoc.data() });
   } catch (err) {
     console.error('Erro ao atualizar orçamento:', err.message);
-    res.status(500).send('Erro no Servidor ao atualizar orçamento');
+    res.status(500).json({ erro: 'Erro no servidor ao atualizar orçamento' });
   }
 });
 
@@ -177,7 +177,7 @@ router.delete('/:id', async (req, res) => {
     res.json({ msg: 'Orçamento removido com sucesso' });
   } catch (err) {
     console.error('Erro ao deletar orçamento:', err.message);
-    res.status(500).send('Erro no Servidor ao deletar orçamento');
+    res.status(500).json({ erro: 'Erro no servidor ao deletar orçamento' });
   }
 });
 

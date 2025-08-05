@@ -4,10 +4,10 @@
 require('dotenv').config();
 
 // Importa a configuração do Express de app.js (agora na mesma pasta que server.js no deploy)
-const app = require('./src/app');
+const app = require('./app');
 
 // Importa a instância do Firestore de config/db.js (agora na mesma pasta que server.js no deploy)
-const { db } = require('./src/config/db');
+const { db } = require('./config/db');
 
 // Define a porta, usando a variável de ambiente ou 5000 como padrão
 const PORT = process.env.PORT || 5000;
