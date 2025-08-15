@@ -4,6 +4,12 @@ const router = express.Router();
 const { db } = require('../config/db'); // Importa a instância do Firestore
 const admin = require('firebase-admin'); // Importa admin para usar FieldValue.serverTimestamp()
 
+// Habilitando a opção ignoreUndefinedProperties
+const firestore = admin.firestore();
+firestore.settings({
+    ignoreUndefinedProperties: true
+});
+
 const orcamentosCollection = db.collection('orcamentos'); // Referência à coleção de orçamentos
 
 // @route   GET /api/orcamentos
