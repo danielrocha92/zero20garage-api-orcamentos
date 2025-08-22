@@ -3,23 +3,21 @@
 
 require('dotenv').config();
 
-// Importa a configuração do Express de app.js (agora na mesma pasta que server.js no deploy)
+// Importa a configuração do Express de app.js
 const app = require('./app');
 
-// Importa a instância do Firestore de config/db.js (agora na mesma pasta que server.js no deploy)
+// Importa a configuração de imagem upload da rota upload.js
+const uploadRouter = require('./routes/upload'); // Caminho corrigido
+app.use('/api', uploadRouter);
+
+// Importa a instância do Firestore de config/db.js
 const { db } = require('./config/db');
 
 // Define a porta, usando a variável de ambiente ou 5000 como padrão
 const PORT = process.env.PORT || 5000;
 
-// Inicia o servidor Express. A conexão com o Firebase é feita na inicialização do 'db.js'.
+// Inicia o servidor Express.
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
   console.log(`Acesse a API em: http://localhost:${PORT}/api/orcamentos`);
-  // Opcional: Verifique se o Firestore está acessível (pode ser feito com uma query simples)
-  // db.collection('orcamentos').limit(1).get().then(() => {
-  //   console.log('Conexão com Firestore verificada com sucesso.');
-  // }).catch(err => {
-  //   console.error('Falha ao verificar conexão com Firestore:', err);
-  // });
 });
