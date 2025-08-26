@@ -15,7 +15,7 @@ cloudinary.config({
 });
 
 // Importa a configuração de imagem upload da rota upload.js
-const uploadRouter = require('./routes/upload');
+const uploadRouter = require('./routes/upload-image'); // Ajuste o nome do arquivo
 app.use('/api', uploadRouter);
 
 // Importa a instância do Firestore de config/db.js
