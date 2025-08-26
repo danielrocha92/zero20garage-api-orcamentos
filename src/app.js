@@ -9,7 +9,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Rotas
+// Rotas só de orçamentos
 app.use('/api/orcamentos', orcamentoRoutes);
 
 // Rota padrão para teste de funcionamento

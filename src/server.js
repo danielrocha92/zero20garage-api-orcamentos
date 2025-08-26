@@ -6,23 +6,11 @@ require('dotenv').config();
 // Importa a configuração do Express de app.js
 const app = require('./app');
 
-// **IMPORTANTE:** Configure o Cloudinary aqui
-const cloudinary = require('cloudinary').v2;
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET
-});
-
-// Importa a configuração de imagem upload da rota upload.js
-const uploadRouter = require('./routes/upload-image'); // Ajuste o nome do arquivo
-app.use('/api', uploadRouter);
-
 // Importa a instância do Firestore de config/db.js
 const { db } = require('./config/db');
 
 // Define a porta, usando a variável de ambiente ou 5000 como padrão
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 10001; // no backend de orçamentos
 
 // Inicia o servidor Express.
 app.listen(PORT, () => {
