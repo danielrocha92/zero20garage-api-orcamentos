@@ -1,0 +1,81 @@
+// src/routes/upload-image.js
+const express = require('express');
+const multer = require('multer');
+const cloudinary = require('cloudinary').v2;
+const router = express.Router();
+
+// Configuração do multer para manusear o upload em memória
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
+
+/**
+ * @swagger
+ * /api/upload-image:
+ * post:
+ * summary: Faz o upload de uma imagem para o Cloudinary
+ * tags: [Imagens]
+ * requestBody:
+ * required: true
+ * content:
+ * multipart/form-data:
+ * schema:
+ * type: object
+ * properties:
+ * image:
+ * type: string
+ * format: binary
+ * description: O arquivo de imagem a ser enviado.
+ * application/json:
+ * schema:
+ * type: object
+ * properties:
+ * imageData:
+ * type: string
+ * description: A imagem em formato base64.
+ * responses:
+ * 200:
+ * description: Imagem enviada com sucesso, retorna a URL.
+ * content:
+ * application/json:
+ * schema:
+ * type: object
+ * properties:
+ * url:
+ * type: string
+ * description: A URL segura da imagem no Cloudinary.
+ * 400:
+ * description: Erro, nenhum arquivo ou dado de imagem recebido.
+ * 500:
+ * description: Erro ao fazer o upload da imagem.
+ */
+router.post('/upload-image', upload.single('image'), async (req, res) => {
+  try {
+    // Obtenha a imagem do FormData (upload de arquivo) ou do corpo da requisição (câmera)
+    const file = req.file;
+    const imageData = req.body.imageData;
+
+    let uploadResult;
+
+    if (file) {
+      // Upload de arquivo (ex: de um formulário)
+      const b64 = Buffer.from(file.buffer).toString('base64');
+      const dataURI = 'data:' + file.mimetype + ';base64,' + b64;
+      uploadResult = await cloudinary.uploader.upload(dataURI);
+    } else if (imageData) {
+      // Upload de base64 (ex: de uma câmera ou tela de desenho)
+      uploadResult = await cloudinary.uploader.upload(imageData);
+    } else {
+      // Retorna erro se nenhum arquivo ou dado for recebido
+      return res.status(400).json({ error: 'Nenhum arquivo ou dado de imagem recebido.' });
+    }
+
+    // Retorna a URL segura da imagem para o frontend
+    res.status(200).json({ url: uploadResult.secure_url });
+
+  } catch (error) {
+    console.error('Erro no upload para o Cloudinary:', error);
+    res.status(500).json({ error: 'Erro ao fazer o upload da imagem.' });
+  }
+});
+
+module.exports = router;
