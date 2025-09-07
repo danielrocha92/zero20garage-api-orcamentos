@@ -1,29 +1,25 @@
-// server.js (Versão com verificação de conexão)
-
+// src/server.js
 require('dotenv').config();
-const app = require('./app');
-const { db } = require('./config/db');
 
+console.log('1. Importando o app...');
+const app = require('./app');
+console.log('2. App importado com sucesso.');
+
+// Importa a instância do Firestore de config/db.js
+console.log('3. Importando a conexão com o banco de dados...');
+const { db } = require('./config/db');
+console.log('4. Conexão com o banco de dados importada com sucesso.');
+
+// Define a porta
 const PORT = process.env.PORT || 10001;
 
-async function startServer() {
-    try {
-        // Exemplo de verificação de conexão (fazendo uma requisição de teste)
-        // Você pode ajustar isso para algo que faça sentido no seu projeto
-        await db.collection('teste_conexao').doc('teste').get();
-        console.log('Firebase Firestore conectado com sucesso!');
+// Inicia o servidor Express.
+console.log('5. Tentando iniciar o servidor na porta', PORT);
+app.listen(PORT, () => {
+  // Esta parte só é executada quando o servidor está "ouvindo"
+  console.log('6. Servidor Express iniciado com sucesso!');
+  console.log(`Acesse a API em: http://localhost:${PORT}/api/orcamentos`);
+});
 
-        // Inicia o servidor somente se a conexão com o banco de dados for bem-sucedida
-        app.listen(PORT, () => {
-            console.log(`Servidor rodando na porta ${PORT}`);
-            console.log(`Acesse a API em: http://localhost:${PORT}/api/orcamentos`);
-        });
-
-    } catch (error) {
-        console.error('Falha ao conectar com o Firebase Firestore:', error.message);
-        console.error('Servidor não iniciado devido a erro de conexão com o banco de dados.');
-        process.exit(1); // Encerra o processo com código de erro
-    }
-}
-
-startServer();
+// Qualquer código que venha após app.listen() é o que pode estar finalizando a aplicação
+// Verifique se há algo aqui que está causando o erro.
