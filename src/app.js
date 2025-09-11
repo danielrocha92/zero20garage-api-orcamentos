@@ -7,10 +7,10 @@ const uploadRoutes = require('./routes/upload');
 
 const app = express();
 
-// --- Configuração CORS ---
+// ======== Configuração do CORS ========
 const allowedOrigins = [
-  'http://localhost:3000',              // frontend dev
-  'https://zero20garage.vercel.app'     // frontend produção
+  'http://localhost:3000',               // front-end dev
+  'https://zero20garage.vercel.app',     // front-end produção
 ];
 
 const corsOptions = {
@@ -23,32 +23,22 @@ const corsOptions = {
     }
     return callback(null, true);
   },
-  credentials: true, // permite cookies, authorization headers
-  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  credentials: true, // permite cookies e headers de autorização
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 };
 
-// Aplica CORS antes de qualquer rota
+// Aplica CORS globalmente
 app.use(cors(corsOptions));
 
-// Middleware para pré-voo (preflight)
-app.use((req, res, next) => {
-  if (req.method === 'OPTIONS') {
-    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-    res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
-    res.header('Access-Control-Allow-Headers', req.headers['access-control-request-headers'] || '*');
-    return res.sendStatus(200);
-  }
-  next();
-});
+// Permitir preflight requests para todas as rotas
+app.options('*', cors(corsOptions));
 
-// Middleware para parse de JSON
+// ======== Middleware ========
 app.use(express.json());
 
-// Rotas de orçamentos
+// ======== Rotas ========
 app.use('/api/orcamentos', orcamentoRoutes);
-
-// Rotas de uploads
 app.use('/api/upload', uploadRoutes);
 
 // Rota padrão para teste
