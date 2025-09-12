@@ -1,16 +1,15 @@
-// src/app.js
 const express = require('express');
 const cors = require('cors');
 
 const orcamentoRoutes = require('./routes/orcamento');
-const uploadRoutes = require('./routes/upload');
+// const uploadRoutes = require('./routes/upload'); // Esta linha foi removida
 
 const app = express();
 
 // ======== Configuração do CORS ========
 const allowedOrigins = [
   'http://localhost:3000',               // front-end dev
-  'https://zero20garage.vercel.app',     // front-end produção
+  'https://zero20garage.vercel.app',    // front-end produção
 ];
 
 const corsOptions = {
@@ -39,7 +38,7 @@ app.use(express.json());
 
 // ======== Rotas ========
 app.use('/api/orcamentos', orcamentoRoutes);
-app.use('/api/upload', uploadRoutes);
+// app.use('/api/upload', uploadRoutes); // Esta linha foi removida
 
 // Rota padrão para teste
 app.get('/', (req, res) => {
