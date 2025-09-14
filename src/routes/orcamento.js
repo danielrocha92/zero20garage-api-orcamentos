@@ -1,20 +1,26 @@
-// orcamento-admin-zero20-api/src/routes/orcamento.js
+// src/routes/orcamento.js
 const express = require('express');
 const router = express.Router();
 const { db } = require('../config/db');
 const admin = require('firebase-admin');
+const multer = require('multer');
+const cloudinary = require('../config/cloudinary');
+const { Readable } = require('stream');
 
-// Habilitando a opção ignoreUndefinedProperties
+// Configuração do Firestore
 const firestore = admin.firestore();
 firestore.settings({
     ignoreUndefinedProperties: true
 });
-
 const orcamentosCollection = db.collection('orcamentos');
 
-// @route   GET /api/orcamentos
-// @desc    Obter todos os orçamentos
-// @access  Public
+// Configuração do Multer (upload em memória)
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
+
+// ---------------- CRUD DE ORÇAMENTOS ---------------- //
+
+// GET todos
 router.get('/', async (req, res) => {
     try {
         const snapshot = await orcamentosCollection.orderBy('createdAt', 'desc').get();
@@ -29,9 +35,7 @@ router.get('/', async (req, res) => {
     }
 });
 
-// @route   GET /api/orcamentos/:id
-// @desc    Obter um orçamento por ID
-// @access  Public
+// GET por ID
 router.get('/:id', async (req, res) => {
     try {
         const docRef = orcamentosCollection.doc(req.params.id);
@@ -47,9 +51,7 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-// @route   POST /api/orcamentos
-// @desc    Criar um novo orçamento
-// @access  Public
+// POST criar orçamento
 router.post('/', async (req, res) => {
     const {
         cliente, telefone, veiculo, placa, ordemServico, tipo,
@@ -80,6 +82,7 @@ router.post('/', async (req, res) => {
         garantia: garantia || '',
         observacoes: observacoes || '',
         status: status || 'Aberto',
+        imagens: [], // campo novo para armazenar URLs das imagens
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
@@ -101,27 +104,19 @@ router.post('/', async (req, res) => {
     }
 });
 
-// @route   PUT /api/orcamentos/:id
-// @desc    Atualizar um orçamento existente
-// @access  Public
+// PUT atualizar
 router.put('/:id', async (req, res) => {
     const { id } = req.params;
     const body = req.body;
 
-    // Cria um objeto de atualização dinâmico.
     const updatedOrcamentoData = {};
-
-    // Adiciona apenas os campos enviados no corpo da requisição que não são 'undefined'.
     for (const key in body) {
-        // Ignora o ID para evitar tentar atualizar o ID do documento
         if (key !== 'id' && body[key] !== undefined) {
             updatedOrcamentoData[key] = body[key];
         }
     }
 
-    // Adiciona o timestamp de atualização.
     updatedOrcamentoData.updatedAt = admin.firestore.FieldValue.serverTimestamp();
-    // Atualiza o campo de data principal, caso o front-end envie uma edição.
     updatedOrcamentoData.data = admin.firestore.FieldValue.serverTimestamp();
 
     try {
@@ -139,7 +134,6 @@ router.put('/:id', async (req, res) => {
             }
         }
 
-        // Usa o método `update` para atualizar os campos fornecidos.
         await docRef.update(updatedOrcamentoData);
 
         const updatedDoc = await docRef.get();
@@ -150,9 +144,7 @@ router.put('/:id', async (req, res) => {
     }
 });
 
-// @route   DELETE /api/orcamentos/:id
-// @desc    Deletar um orçamento
-// @access  Public
+// DELETE orçamento
 router.delete('/:id', async (req, res) => {
     try {
         const docRef = orcamentosCollection.doc(req.params.id);
@@ -167,6 +159,55 @@ router.delete('/:id', async (req, res) => {
     } catch (err) {
         console.error('Erro ao deletar orçamento:', err.message);
         res.status(500).json({ erro: 'Erro no servidor ao deletar orçamento' });
+    }
+});
+
+// ---------------- UPLOAD DE IMAGEM ---------------- //
+
+// POST /api/orcamentos/:id/imagens
+router.post('/:id/imagens', upload.single('imagem'), async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const docRef = orcamentosCollection.doc(id);
+        const doc = await docRef.get();
+
+        if (!doc.exists) {
+            return res.status(404).json({ msg: 'Orçamento não encontrado' });
+        }
+
+        if (!req.file) {
+            return res.status(400).json({ msg: 'Nenhum arquivo enviado' });
+        }
+
+        // Converte buffer em stream para o Cloudinary
+        const bufferStream = new Readable();
+        bufferStream.push(req.file.buffer);
+        bufferStream.push(null);
+
+        const uploadStream = cloudinary.uploader.upload_stream(
+            { folder: `orcamentos/${id}` },
+            async (error, result) => {
+                if (error) {
+                    console.error('Erro no upload Cloudinary:', error);
+                    return res.status(500).json({ erro: 'Falha no upload da imagem' });
+                }
+
+                // Atualiza Firestore com a URL
+                await docRef.update({
+                    imagens: admin.firestore.FieldValue.arrayUnion(result.secure_url),
+                    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+                });
+
+                res.json({ url: result.secure_url });
+            }
+        );
+
+        bufferStream.pipe(uploadStream);
+
+    } catch (err) {
+        console.error('Erro ao fazer upload da imagem:', err.message);
+        res.status(500).json({ erro: 'Erro no servidor ao fazer upload da imagem' });
     }
 });
 
