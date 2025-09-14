@@ -1,12 +1,10 @@
-import admin from 'firebase-admin';
+import { db, admin } from '../config/db.js';
 
-const db = admin.firestore();
-const COLLECTION = process.env.FIREBASE_COLLECTION_ORCAMENTOS || 'orcamentos';
+const COLLECTION = 'orcamentos';
 
 export const updateOrcamentoWithImage = async (orcamentoId, imageUrl, public_id, remove = false) => {
   const ref = db.collection(COLLECTION).doc(orcamentoId);
   const doc = await ref.get();
-
   if (!doc.exists) throw new Error('Orçamento não encontrado');
 
   let currentImages = doc.data().imagens || [];
@@ -17,5 +15,5 @@ export const updateOrcamentoWithImage = async (orcamentoId, imageUrl, public_id,
     currentImages.push({ imagemUrl: imageUrl, public_id });
   }
 
-  await ref.update({ imagens: currentImages });
+  await ref.update({ imagens: currentImages, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
 };

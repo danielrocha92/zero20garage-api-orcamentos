@@ -1,48 +1,30 @@
-const express = require('express');
-const cors = require('cors');
-
-const orcamentoRoutes = require('./routes/orcamento');
-// const uploadRoutes = require('./routes/upload'); // Esta linha foi removida
+import express from 'express';
+import cors from 'cors';
+import orcamentosRoutes from './routes/orcamentos.js';
 
 const app = express();
 
-// ======== Configuração do CORS ========
 const allowedOrigins = [
-  'http://localhost:3000',               // front-end dev
-  'https://zero20garage.vercel.app',    // front-end produção
+  'http://localhost:3000',
+  'https://zero20garage.vercel.app'
 ];
 
-const corsOptions = {
-  origin: function (origin, callback) {
-    // permitir requests sem origin (curl, Postman, etc.)
+app.use(cors({
+  origin: function(origin, callback) {
     if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = `O CORS para este site não é permitido: ${origin}`;
-      return callback(new Error(msg), false);
-    }
+    if (allowedOrigins.indexOf(origin) === -1) return callback(new Error('CORS não permitido'), false);
     return callback(null, true);
   },
-  credentials: true, // permite cookies e headers de autorização
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-};
+  credentials: true,
+  methods: ['GET','POST','PUT','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization']
+}));
 
-// Aplica CORS globalmente
-app.use(cors(corsOptions));
+app.options('*', cors());
 
-// Permitir preflight requests para todas as rotas
-app.options('*', cors(corsOptions));
-
-// ======== Middleware ========
 app.use(express.json());
+app.use('/api/orcamentos', orcamentosRoutes);
 
-// ======== Rotas ========
-app.use('/api/orcamentos', orcamentoRoutes);
-// app.use('/api/upload', uploadRoutes); // Esta linha foi removida
+app.get('/', (req, res) => res.send('API Zero20 Garage online!'));
 
-// Rota padrão para teste
-app.get('/', (req, res) => {
-  res.send('API da Zero20 Garage está online!');
-});
-
-module.exports = app;
+export default app;
