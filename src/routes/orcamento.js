@@ -1,14 +1,12 @@
 import express from 'express';
+import { db, admin } from '../config/db.js';
 import multer from 'multer';
 import cloudinary from '../config/cloudinary.js';
-import { db, admin } from '../config/db.js';
 import { Readable } from 'stream';
-import { updateOrcamentoWithImage } from '../services/orcamentosService.js';
 
 const router = express.Router();
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
-
 const orcamentosCollection = db.collection('orcamentos');
 
 // ---------- CRUD ---------- //
