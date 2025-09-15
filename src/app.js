@@ -30,8 +30,11 @@ const corsOptions = {
   allowedHeaders: ['Content-Type', 'Authorization'],
 };
 
+// ✅ aplica CORS globalmente
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // 🔑 responde preflight antes das rotas
+
+// ✅ garante resposta para preflight
+app.options('*', cors(corsOptions));
 
 // Middleware global
 app.use(express.json());
@@ -39,7 +42,9 @@ app.use(express.json());
 // Rotas
 app.use('/api/orcamentos', orcamentosRoutes);
 
-// Teste rápido
-app.get('/', (req, res) => res.json({ ok: true, msg: '🚀 Upload API online com CORS' }));
+// Rota teste
+app.get('/', (req, res) =>
+  res.json({ ok: true, msg: '🚀 Upload API online com CORS habilitado' })
+);
 
 export default app;
