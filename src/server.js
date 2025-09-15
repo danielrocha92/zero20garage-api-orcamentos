@@ -1,9 +1,8 @@
-import 'dotenv/config';
+// src/server.js
 import app from './app.js';
-import { db } from './config/db.js';
 
-const PORT = process.env.PORT || 10001;
+const PORT = process.env.PORT || 8080;
 
 app.listen(PORT, () => {
-  console.log(`Servidor rodando em http://localhost:${PORT}/api/orcamentos`);
+  console.log(`🚀 Servidor rodando na porta ${PORT}`);
 });
