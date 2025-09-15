@@ -33,13 +33,13 @@ const corsOptions = {
 // ✅ aplica CORS globalmente
 app.use(cors(corsOptions));
 
-// ✅ garante resposta para preflight (inclui fallback para evitar 404)
-app.options('*', cors(corsOptions));
-app.use((req, res, next) => {
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-  next();
+// ✅ middleware para tratar preflight OPTIONS corretamente
+app.options('*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.sendStatus(200);
 });
 
 // Middleware global
