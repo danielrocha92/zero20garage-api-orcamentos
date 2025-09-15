@@ -33,8 +33,14 @@ const corsOptions = {
 // ✅ aplica CORS globalmente
 app.use(cors(corsOptions));
 
-// ✅ garante resposta para preflight
+// ✅ garante resposta para preflight (inclui fallback para evitar 404)
 app.options('*', cors(corsOptions));
+app.use((req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
 
 // Middleware global
 app.use(express.json());

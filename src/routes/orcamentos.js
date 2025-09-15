@@ -1,3 +1,4 @@
+// src/routes/orcamentos.js
 import express from 'express';
 import { db, admin } from '../config/db.js';
 import multer from 'multer';
@@ -8,6 +9,14 @@ const router = express.Router();
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 const orcamentosCollection = db.collection('orcamentos');
+
+// ---------- CORS para preflight ---------- //
+router.options('*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*'); // ou use lista de allowedOrigins
+  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.sendStatus(200);
+});
 
 // ---------- CRUD ---------- //
 
