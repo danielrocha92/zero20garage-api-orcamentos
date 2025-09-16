@@ -12,20 +12,40 @@ const orcamentosCollection = db.collection('orcamentos');
 
 // --- CRUD ---
 
-// Listar orçamentos (paginação simples com limit)
+// Listar orçamentos (paginação eficiente com cursor)
 router.get('/', async (req, res) => {
   try {
-    const { page = 1, size = 10 } = req.query;
-    const pageNumber = Math.max(parseInt(page), 1);
+    const { size = 10, lastId } = req.query;
     const sizeNumber = Math.max(parseInt(size), 1);
-    const offset = (pageNumber - 1) * sizeNumber;
 
-    const snapshot = await orcamentosCollection.limit(sizeNumber).offset(offset).get();
-    const orcamentos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    res.json(orcamentos);
+    let query = orcamentosCollection.orderBy('ordemServico', 'desc').limit(sizeNumber);
+
+    if (lastId) {
+      const lastDoc = await orcamentosCollection.doc(lastId).get();
+      if (lastDoc.exists) {
+        query = query.startAfter(lastDoc);
+      }
+    }
+
+    const snapshot = await query.get();
+
+    const orcamentos = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        ordemServico: data.ordemServico || 0, // valor padrão
+        imagens: Array.isArray(data.imagens) ? data.imagens : [], // garante array
+        data: data.data?.toDate?.() || null, // converte timestamp
+      };
+    });
+
+    const lastDocId = snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1].id : null;
+
+    res.json({ orcamentos, lastDocId });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ erro: 'Erro ao buscar orçamentos' });
+    console.error('Erro ao buscar orçamentos:', err);
+    res.status(500).json({ erro: err.message });
   }
 });
 
@@ -34,7 +54,14 @@ router.get('/:id', async (req, res) => {
   try {
     const doc = await orcamentosCollection.doc(req.params.id).get();
     if (!doc.exists) return res.status(404).json({ erro: 'Orçamento não encontrado' });
-    res.json({ id: doc.id, ...doc.data() });
+
+    const data = doc.data();
+    res.json({
+      id: doc.id,
+      ...data,
+      imagens: Array.isArray(data.imagens) ? data.imagens : [],
+      data: data.data?.toDate?.() || null,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ erro: 'Erro ao obter orçamento' });
