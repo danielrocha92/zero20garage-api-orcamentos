@@ -1,23 +1,23 @@
-// src/services/orcamentosService.js
-import { db, admin } from '../config/db.js';
+import { db, admin } from '../config/firebaseAdmin.js';
 
 const COLLECTION = 'orcamentos';
 
 export const updateOrcamentoWithImage = async (orcamentoId, newImages, public_id_to_remove = null) => {
-  const ref = db.collection(COLLECTION).doc(orcamentoId);
-  const doc = await ref.get();
+  const ref = db.collection(COLLECTION).doc(orcamentoId);
+  const doc = await ref.get();
 
-  if (!doc.exists) {
-    throw new Error('Orçamento não encontrado');
-  }
+  if (!doc.exists) throw new Error('Orçamento não encontrado');
 
-  let currentImages = doc.data().imagens || [];
+  let currentImages = doc.data().imagens || [];
 
-  if (public_id_to_remove) {
-    currentImages = currentImages.filter(img => img.public_id !== public_id_to_remove);
-  } else if (newImages) {
-    currentImages.push(...newImages);
-  }
+  if (public_id_to_remove) {
+    currentImages = currentImages.filter(img => img.public_id !== public_id_to_remove);
+  } else if (newImages) {
+    currentImages = [...currentImages, ...newImages];
+  }
 
-  await ref.update({ imagens: currentImages, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+  await ref.update({
+    imagens: currentImages,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+  });
 };
