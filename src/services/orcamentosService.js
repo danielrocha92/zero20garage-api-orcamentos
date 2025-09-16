@@ -1,4 +1,4 @@
-import { db, admin } from '../config/firebaseAdmin.js';
+import { db, admin } from '../config/db.js';
 
 const COLLECTION = 'orcamentos';
 

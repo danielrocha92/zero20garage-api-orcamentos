@@ -1,7 +1,7 @@
 import express from 'express';
 import multer from 'multer';
 import { Readable } from 'stream';
-import { db } from '../config/firebaseAdmin.js';
+import { db } from '../config/db.js';
 import cloudinary from '../config/cloudinary.js';
 import { updateOrcamentoWithImage } from '../services/orcamentosService.js';
 
