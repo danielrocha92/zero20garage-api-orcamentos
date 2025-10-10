@@ -1,7 +1,7 @@
 import express from 'express';
 import multer from 'multer';
 import { Readable } from 'stream';
-import { db } from '../config/db.js';
+import { db, admin } from '../config/db.js';
 import cloudinary from '../config/cloudinary.js';
 import { updateOrcamentoWithImage } from '../services/orcamentosService.js';
 
@@ -9,6 +9,20 @@ const router = express.Router();
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 const orcamentosCollection = db.collection('orcamentos');
+
+/**
+ * Função para obter o próximo número da Ordem de Serviço.
+ */
+const getNextOrdemServico = async () => {
+  const counterRef = db.collection('counters').doc('orcamentos');
+  const result = await db.runTransaction(async (transaction) => {
+    const counterDoc = await transaction.get(counterRef);
+    const newOrdemServico = (counterDoc.data()?.current || 0) + 1;
+    transaction.set(counterRef, { current: newOrdemServico });
+    return newOrdemServico;
+  });
+  return result;
+};
 
 // --- CRUD ---
 
@@ -37,6 +51,7 @@ router.get('/', async (req, res) => {
         ordemServico: data.ordemServico || 0, // valor padrão
         imagens: Array.isArray(data.imagens) ? data.imagens : [], // garante array
         data: data.data?.toDate?.() || null, // converte timestamp
+        updatedAt: data.updatedAt?.toDate?.() || data.data?.toDate?.() || null, // converte timestamp de atualização
       };
     });
 
@@ -61,6 +76,7 @@ router.get('/:id', async (req, res) => {
       ...data,
       imagens: Array.isArray(data.imagens) ? data.imagens : [],
       data: data.data?.toDate?.() || null,
+      updatedAt: data.updatedAt?.toDate?.() || data.data?.toDate?.() || null,
     });
   } catch (err) {
     console.error(err);
@@ -71,9 +87,20 @@ router.get('/:id', async (req, res) => {
 // Criar orçamento
 router.post('/', async (req, res) => {
   try {
-    const novoOrcamento = req.body;
-    const docRef = await orcamentosCollection.add(novoOrcamento);
-    res.status(201).json({ id: docRef.id, ...novoOrcamento });
+    const ordemServico = await getNextOrdemServico();
+    const serverTimestamp = admin.firestore.FieldValue.serverTimestamp();
+
+    const orcamentoParaSalvar = {
+      ...req.body,
+      status: req.body.status || 'Aberto', // Garante um status padrão
+      ordemServico,
+      data: serverTimestamp,
+      updatedAt: serverTimestamp,
+    };
+
+    const docRef = await orcamentosCollection.add(orcamentoParaSalvar);
+    // Retorna o objeto com o ID, mas sem os FieldValue sentinels
+    res.status(201).json({ id: docRef.id, ...req.body, ordemServico, status: orcamentoParaSalvar.status });
   } catch (err) {
     console.error(err);
     res.status(500).json({ erro: 'Erro ao criar orçamento' });
@@ -83,7 +110,12 @@ router.post('/', async (req, res) => {
 // Atualizar orçamento
 router.put('/:id', async (req, res) => {
   try {
-    await orcamentosCollection.doc(req.params.id).update(req.body);
+    const dadosParaAtualizar = {
+      ...req.body,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+
+    await orcamentosCollection.doc(req.params.id).update(dadosParaAtualizar);
     res.json({ id: req.params.id, ...req.body });
   } catch (err) {
     console.error(err);
@@ -126,7 +158,7 @@ router.post('/:id/imagens', upload.array('imagens'), async (req, res) => {
       uploadResults.push({ imagemUrl: result.secure_url, public_id: result.public_id });
     }
 
-    await updateOrcamentoWithImage(id, uploadResults);
+    await updateOrcamentoWithImage(id, { newImages: uploadResults });
     res.json({ message: 'Uploads realizados com sucesso', imagens: uploadResults });
   } catch (err) {
     console.error(err);
