@@ -139,7 +139,7 @@ router.delete('/:id/imagens/:public_id', async (req, res) => {
   const { id, public_id } = req.params;
   try {
     await cloudinary.uploader.destroy(public_id);
-    await updateOrcamentoWithImage(id, null, public_id);
+    await updateOrcamentoWithImage(id, { public_id_to_remove: public_id });
     res.json({ msg: 'Imagem removida com sucesso' });
   } catch (err) {
     console.error(err);

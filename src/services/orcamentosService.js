@@ -2,7 +2,7 @@ import { db, admin } from '../config/db.js';
 
 const COLLECTION = 'orcamentos';
 
-export const updateOrcamentoWithImage = async (orcamentoId, newImages, public_id_to_remove = null) => {
+export const updateOrcamentoWithImage = async (orcamentoId, { newImages, public_id_to_remove }) => {
   const ref = db.collection(COLLECTION).doc(orcamentoId);
   const doc = await ref.get();
 
