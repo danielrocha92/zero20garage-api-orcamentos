@@ -2,7 +2,7 @@ import { db, admin } from '../config/db.js';
 
 const COLLECTION = 'orcamentos';
 
-export const updateOrcamentoWithImage = async (orcamentoId, imageUrl, public_id, remove = false) => {
+export const updateOrcamentoWithImage = async (orcamentoId, { imageUrl, public_id, remove = false }) => {
   const ref = db.collection(COLLECTION).doc(orcamentoId);
   const doc = await ref.get();
   if (!doc.exists) throw new Error('Orçamento não encontrado');
@@ -12,7 +12,9 @@ export const updateOrcamentoWithImage = async (orcamentoId, imageUrl, public_id,
   if (remove) {
     currentImages = currentImages.filter(img => img.public_id !== public_id);
   } else {
-    currentImages.push({ imagemUrl: imageUrl, public_id });
+    if (imageUrl && public_id) {
+      currentImages.push({ imagemUrl: imageUrl, public_id });
+    }
   }
 
   await ref.update({ imagens: currentImages, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
