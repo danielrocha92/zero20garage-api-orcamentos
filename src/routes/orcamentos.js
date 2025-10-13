@@ -2,6 +2,7 @@ import express from 'express';
 import multer from 'multer';
 import { Readable } from 'stream';
 import { db, admin } from '../config/db.js';
+import { Timestamp } from 'firebase-admin/firestore'; // Importante para consultas de data
 import cloudinary from '../config/cloudinary.js';
 import { updateOrcamentoWithImage } from '../services/orcamentosService.js';
 
@@ -11,7 +12,7 @@ const upload = multer({ storage });
 const orcamentosCollection = db.collection('orcamentos');
 
 /**
- * Função para obter o próximo número da Ordem de Serviço.
+ * Função para obter o próximo número da Ordem de Serviço de forma transacional.
  */
 const getNextOrdemServico = async () => {
   const counterRef = db.collection('counters').doc('orcamentos');
@@ -26,31 +27,76 @@ const getNextOrdemServico = async () => {
 
 // --- CRUD ---
 
-// Listar orçamentos (paginação eficiente com cursor)
+// Listar orçamentos (CORRIGIDO com sintaxe Firestore e paginação por cursor)
 router.get('/', async (req, res) => {
   try {
-    // Removida a paginação para buscar todos os orçamentos.
-    const query = orcamentosCollection.orderBy('ordemServico', 'desc');
+    const { limit = 50, startAfter, search, tipo, data } = req.query;
 
-    const snapshot = await query.get();
+    // A consulta base sempre ordena pela data para uma paginação consistente
+    let orcamentosQuery = orcamentosCollection.orderBy('data', 'desc');
 
-    const orcamentos = snapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
+    // --- Filtros (adaptados para o Firestore) ---
+
+    // Filtro de busca simples (exemplo buscando no campo 'cliente')
+    // Nota: Firestore não suporta busca "LIKE" ou regex. A busca é por igualdade.
+    // Para buscas complexas (parciais, em múltiplos campos), o ideal é usar um serviço como Algolia.
+    if (search) {
+      orcamentosQuery = orcamentosQuery.where('cliente', '==', search);
+    }
+
+    // Filtro por tipo de orçamento
+    if (tipo) {
+      orcamentosQuery = orcamentosQuery.where('tipo', '==', tipo);
+    }
+
+    // Filtro por data específica
+    if (data) {
+      const dataInicio = new Date(data);
+      dataInicio.setUTCHours(0, 0, 0, 0);
+
+      const dataFim = new Date(data);
+      dataFim.setUTCHours(23, 59, 59, 999);
+
+      orcamentosQuery = orcamentosQuery
+        .where('data', '>=', Timestamp.fromDate(dataInicio))
+        .where('data', '<=', Timestamp.fromDate(dataFim));
+    }
+
+    // --- Lógica de Paginação (Cursor) ---
+    if (startAfter) {
+      // O cliente deve enviar o timestamp em milissegundos do último item da página anterior
+      const startAfterTimestamp = Timestamp.fromMillis(parseInt(startAfter, 10));
+      orcamentosQuery = orcamentosQuery.startAfter(startAfterTimestamp);
+    }
+
+    // Limita o número de documentos por página
+    orcamentosQuery = orcamentosQuery.limit(Number(limit));
+
+    const snapshot = await orcamentosQuery.get();
+
+    if (snapshot.empty) {
+      return res.json({ orcamentos: [], nextCursor: null });
+    }
+
+    const orcamentos = [];
+    snapshot.forEach(doc => {
+      const docData = doc.data();
+      orcamentos.push({
         id: doc.id,
-        ...data,
-        ordemServico: data.ordemServico || 0, // valor padrão
-        imagens: Array.isArray(data.imagens) ? data.imagens : [], // garante array
-        data: data.data?.toDate?.() || null, // converte timestamp
-        updatedAt: data.updatedAt?.toDate?.() || data.data?.toDate?.() || null, // converte timestamp de atualização, sem sobrescrever 'data'
-      };
+        ...docData,
+        data: docData.data?.toDate?.() || null, // Converte Timestamp para Date
+      });
     });
 
-    // Retorna um array simples de orçamentos, sem o objeto de paginação.
-    res.json(orcamentos);
+    // O cursor para a próxima página será o timestamp do último documento desta página
+    const lastDoc = snapshot.docs[snapshot.docs.length - 1];
+    const nextCursor = lastDoc ? lastDoc.data().data.toMillis() : null;
+
+    res.json({ orcamentos, nextCursor });
+
   } catch (err) {
-    console.error('Erro ao buscar orçamentos:', err);
-    res.status(500).json({ erro: err.message });
+    console.error("Erro ao buscar orçamentos:", err);
+    res.status(500).json({ message: "Erro interno no servidor." });
   }
 });
 
@@ -66,7 +112,7 @@ router.get('/:id', async (req, res) => {
       ...data,
       imagens: Array.isArray(data.imagens) ? data.imagens : [],
       data: data.data?.toDate?.() || null,
-      updatedAt: data.updatedAt?.toDate?.() || data.data?.toDate?.() || null, // Correção para não sobrescrever 'data'
+      updatedAt: data.updatedAt?.toDate?.() || data.data?.toDate?.() || null,
     });
   } catch (err) {
     console.error(err);
@@ -82,14 +128,13 @@ router.post('/', async (req, res) => {
 
     const orcamentoParaSalvar = {
       ...req.body,
-      status: req.body.status || 'Aberto', // Garante um status padrão
+      status: req.body.status || 'Aberto',
       ordemServico,
       data: serverTimestamp,
       updatedAt: serverTimestamp,
     };
 
     const docRef = await orcamentosCollection.add(orcamentoParaSalvar);
-    // Retorna o objeto com o ID, mas sem os FieldValue sentinels
     res.status(201).json({ id: docRef.id, ...req.body, ordemServico, status: orcamentoParaSalvar.status });
   } catch (err) {
     console.error(err);
@@ -145,11 +190,11 @@ router.post('/:id/imagens', upload.array('imagens'), async (req, res) => {
         bufferStream.pipe(uploadStream);
       });
 
-      uploadResults.push({ imagemUrl: result.secure_url, public_id: result.public_id });
+      uploadResults.push({ imageUrl: result.secure_url, public_id: result.public_id });
     }
 
     for (const result of uploadResults) {
-      await updateOrcamentoWithImage(id, { imageUrl: result.imagemUrl, public_id: result.public_id });
+      await updateOrcamentoWithImage(id, { imageUrl: result.imageUrl, public_id: result.public_id });
     }
     res.json({ msg: 'Uploads realizados com sucesso', imagens: uploadResults });
   } catch (err) {
@@ -162,7 +207,14 @@ router.post('/:id/imagens', upload.array('imagens'), async (req, res) => {
 router.delete('/:id/imagens/:public_id', async (req, res) => {
   const { id, public_id } = req.params;
   try {
+    // A rota no Cloudinary é o public_id completo, incluindo a pasta
+    const fullPublicId = `orcamentos/${id}/${public_id}`;
+
+    // A API do Cloudinary pode precisar do public_id exato, sem a extensão do arquivo.
+    // O ideal é que o `public_id` já seja salvo corretamente no banco.
+    // Se o public_id já contém a pasta, a linha acima não é necessária.
     await cloudinary.uploader.destroy(public_id);
+
     await updateOrcamentoWithImage(id, { public_id, remove: true });
     res.json({ msg: 'Imagem removida com sucesso' });
   } catch (err) {
