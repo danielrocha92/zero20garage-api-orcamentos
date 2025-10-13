@@ -29,17 +29,8 @@ const getNextOrdemServico = async () => {
 // Listar orçamentos (paginação eficiente com cursor)
 router.get('/', async (req, res) => {
   try {
-    const { size = 10, lastId } = req.query;
-    const sizeNumber = Math.max(parseInt(size), 1);
-
-    let query = orcamentosCollection.orderBy('ordemServico', 'desc').limit(sizeNumber);
-
-    if (lastId) {
-      const lastDoc = await orcamentosCollection.doc(lastId).get();
-      if (lastDoc.exists) {
-        query = query.startAfter(lastDoc);
-      }
-    }
+    // Removida a paginação para buscar todos os orçamentos.
+    const query = orcamentosCollection.orderBy('ordemServico', 'desc');
 
     const snapshot = await query.get();
 
@@ -51,13 +42,12 @@ router.get('/', async (req, res) => {
         ordemServico: data.ordemServico || 0, // valor padrão
         imagens: Array.isArray(data.imagens) ? data.imagens : [], // garante array
         data: data.data?.toDate?.() || null, // converte timestamp
-        updatedAt: data.updatedAt?.toDate?.() || data.data?.toDate?.() || null, // converte timestamp de atualização
+        updatedAt: data.updatedAt?.toDate?.() || data.data?.toDate?.() || null, // converte timestamp de atualização, sem sobrescrever 'data'
       };
     });
 
-    const lastDocId = snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1].id : null;
-
-    res.json({ orcamentos, lastDocId });
+    // Retorna um array simples de orçamentos, sem o objeto de paginação.
+    res.json(orcamentos);
   } catch (err) {
     console.error('Erro ao buscar orçamentos:', err);
     res.status(500).json({ erro: err.message });
@@ -76,7 +66,7 @@ router.get('/:id', async (req, res) => {
       ...data,
       imagens: Array.isArray(data.imagens) ? data.imagens : [],
       data: data.data?.toDate?.() || null,
-      updatedAt: data.updatedAt?.toDate?.() || data.data?.toDate?.() || null,
+      updatedAt: data.updatedAt?.toDate?.() || data.data?.toDate?.() || null, // Correção para não sobrescrever 'data'
     });
   } catch (err) {
     console.error(err);
