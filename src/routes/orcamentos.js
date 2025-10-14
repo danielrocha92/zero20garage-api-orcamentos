@@ -122,8 +122,10 @@ router.get('/:id', async (req, res) => {
 
 // Criar orçamento
 router.post('/', async (req, res) => {
+  console.log('Recebida requisição para criar orçamento com corpo:', req.body);
   try {
     const ordemServico = await getNextOrdemServico();
+    console.log('Próxima Ordem de Serviço:', ordemServico);
     const serverTimestamp = admin.firestore.FieldValue.serverTimestamp();
 
     const orcamentoParaSalvar = {
@@ -133,12 +135,14 @@ router.post('/', async (req, res) => {
       data: serverTimestamp,
       updatedAt: serverTimestamp,
     };
+    console.log('Objeto para salvar no Firestore:', orcamentoParaSalvar);
 
     const docRef = await orcamentosCollection.add(orcamentoParaSalvar);
+    console.log('Orçamento salvo com sucesso. ID do documento:', docRef.id);
     res.status(201).json({ id: docRef.id, ...req.body, ordemServico, status: orcamentoParaSalvar.status });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ erro: 'Erro ao criar orçamento' });
+    console.error('Erro detalhado ao criar orçamento:', err);
+    res.status(500).json({ erro: 'Erro ao criar orçamento', detalhes: err.message });
   }
 });
 
