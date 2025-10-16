@@ -122,12 +122,9 @@ router.post('/', async (req, res) => {
 
     const serverTimestamp = admin.firestore.FieldValue.serverTimestamp();
 
-    // Removemos o campo 'ordemServico' do objeto, pois ele já será o ID
-    // eslint-disable-next-line no-unused-vars
-    const { ordemServico: osDoBody, ...dadosDoBody } = req.body;
-
     const orcamentoParaSalvar = {
-      ...dadosDoBody,
+      ...req.body,
+      ordemServico: osText, // Garante que o campo 'ordemServico' seja salvo no documento
       status: req.body.status || 'Aberto',
       createdAt: serverTimestamp,
       data: serverTimestamp,
