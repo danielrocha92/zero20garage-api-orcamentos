@@ -11,20 +11,6 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage });
 const orcamentosCollection = db.collection('orcamentos');
 
-/**
- * Função transacional para obter o próximo número da OS
- */
-const getNextOrdemServico = async () => {
-  const counterRef = db.collection('counters').doc('orcamentos');
-  const result = await db.runTransaction(async (transaction) => {
-    const counterDoc = await transaction.get(counterRef);
-    const newOrdemServico = (counterDoc.data()?.current || 0) + 1;
-    transaction.set(counterRef, { current: newOrdemServico });
-    return newOrdemServico;
-  });
-  return result;
-};
-
 // ===============================
 // 📦 CRUD de Orçamentos
 // ===============================
@@ -114,34 +100,50 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// 🔹 Criar novo orçamento
+// 🔹 Criar novo orçamento (VERSÃO CORRIGIDA)
 router.post('/', async (req, res) => {
   console.log('📥 Recebida requisição para criar orçamento:', req.body);
   try {
-    const ordemServico = await getNextOrdemServico();
-    console.log('🔢 Próxima Ordem de Serviço:', ordemServico);
+    const { ordemServico } = req.body;
+
+    if (!ordemServico) {
+      return res.status(400).json({ erro: 'O número da Ordem de Serviço (ordemServico) é obrigatório.' });
+    }
+
+    const osText = String(ordemServico); // Garante que o ID seja uma string
+
+    // MUDANÇA 1: A verificação de duplicata agora é feita diretamente pelo ID
+    const docRef = orcamentosCollection.doc(osText);
+    const docSnap = await docRef.get();
+
+    if (docSnap.exists) {
+      return res.status(409).json({ erro: `A Ordem de Serviço ${osText} já existe.` });
+    }
 
     const serverTimestamp = admin.firestore.FieldValue.serverTimestamp();
 
+    // Removemos o campo 'ordemServico' do objeto, pois ele já será o ID
+    // eslint-disable-next-line no-unused-vars
+    const { ordemServico: osDoBody, ...dadosDoBody } = req.body;
+
     const orcamentoParaSalvar = {
-      ...req.body,
+      ...dadosDoBody,
       status: req.body.status || 'Aberto',
-      ordemServico,
-      createdAt: serverTimestamp, // ✅ Restaurado
+      createdAt: serverTimestamp,
       data: serverTimestamp,
       updatedAt: serverTimestamp,
     };
 
-    const docRef = await orcamentosCollection.add(orcamentoParaSalvar);
-
-    console.log(`✅ Orçamento salvo com sucesso (ID: ${docRef.id})`);
+    // MUDANÇA 2: Usamos .set() em vez de .add() para criar o documento com o ID específico
+    await docRef.set(orcamentoParaSalvar);
+    console.log(`✅ Orçamento salvo com sucesso (ID: ${osText})`);
 
     res.status(201).json({
-      id: docRef.id,
-      ...req.body,
-      ordemServico,
-      status: orcamentoParaSalvar.status,
-      createdAt: new Date(), // compatível com exibição imediata no front
+      id: osText, // O ID agora é a própria Ordem de Serviço
+      ...orcamentoParaSalvar,
+      createdAt: new Date(),
+      data: new Date(),
+      updatedAt: new Date(),
     });
   } catch (err) {
     console.error('❌ Erro ao criar orçamento:', err);
@@ -149,16 +151,36 @@ router.post('/', async (req, res) => {
   }
 });
 
+
 // 🔹 Atualizar orçamento existente
 router.put('/:id', async (req, res) => {
   try {
+    const docRef = orcamentosCollection.doc(req.params.id);
+    // eslint-disable-next-line no-unused-vars
+    const dadosDoBody = req.body;
+
     const dadosParaAtualizar = {
-      ...req.body,
+      ...dadosDoBody,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      // Garante que a data vinda do frontend (string) seja convertida para Timestamp
+      // O replace é um ajuste para fusos horários, tratando a data como local.
+      data: dadosDoBody.data ? Timestamp.fromDate(new Date(dadosDoBody.data.replace(/-/g, '/'))) : null,
     };
 
-    await orcamentosCollection.doc(req.params.id).update(dadosParaAtualizar);
-    res.json({ id: req.params.id, ...req.body });
+    await docRef.update(dadosParaAtualizar);
+
+    // Busca o documento atualizado para retornar o objeto completo
+    const updatedDoc = await docRef.get();
+    const data = updatedDoc.data();
+
+    // Retorna o orçamento completo e atualizado, convertendo Timestamps
+    res.json({
+      id: updatedDoc.id,
+      ...data,
+      data: data.data?.toDate?.() || null,
+      createdAt: data.createdAt?.toDate?.() || null,
+      updatedAt: data.updatedAt?.toDate?.() || new Date(), // Retorna a data atual como fallback
+    });
   } catch (err) {
     console.error('❌ Erro ao atualizar orçamento:', err);
     res.status(500).json({ erro: 'Erro ao atualizar orçamento' });
