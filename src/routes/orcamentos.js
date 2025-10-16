@@ -225,10 +225,8 @@ router.post('/:id/imagens', upload.array('imagens'), async (req, res) => {
       uploadResults.push({ imageUrl: result.secure_url, public_id: result.public_id });
     }
 
-    // Itera sobre os resultados e atualiza o documento para cada imagem
-    for (const img of uploadResults) {
-      await updateOrcamentoWithImage(id, { imageUrl: img.imageUrl, public_id: img.public_id });
-    }
+    // Atualiza o documento com todas as novas imagens de uma vez
+    await updateOrcamentoWithImage(id, { newImages: uploadResults });
 
     res.json({ msg: `✅ ${uploadResults.length} imagem(ns) enviada(s) com sucesso`, imagens: uploadResults });
   } catch (err) {
@@ -242,7 +240,7 @@ router.delete('/:id/imagens/:public_id', async (req, res) => {
   const { id, public_id } = req.params;
   try {
     await cloudinary.uploader.destroy(public_id);
-    await updateOrcamentoWithImage(id, { public_id, remove: true });
+    await updateOrcamentoWithImage(id, { public_id });
     res.json({ msg: '🗑️ Imagem removida com sucesso' });
   } catch (err) {
     console.error('❌ Erro ao remover imagem:', err);

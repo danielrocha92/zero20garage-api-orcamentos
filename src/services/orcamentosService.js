@@ -2,7 +2,7 @@ import { db, admin } from '../config/db.js';
 
 const COLLECTION = 'orcamentos';
 
-export const updateOrcamentoWithImage = async (orcamentoId, { newImages, public_id_to_remove }) => {
+export const updateOrcamentoWithImage = async (orcamentoId, { newImages, public_id }) => {
   const ref = db.collection(COLLECTION).doc(orcamentoId);
   const doc = await ref.get();
 
@@ -10,8 +10,8 @@ export const updateOrcamentoWithImage = async (orcamentoId, { newImages, public_
 
   let currentImages = doc.data().imagens || [];
 
-  if (public_id_to_remove) {
-    currentImages = currentImages.filter(img => img.public_id !== public_id_to_remove);
+  if (public_id) {
+    currentImages = currentImages.filter(img => img.public_id !== public_id);
   } else if (newImages) {
     currentImages = [...currentImages, ...newImages];
   }
