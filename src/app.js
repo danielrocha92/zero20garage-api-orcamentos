@@ -1,4 +1,3 @@
-// src/app.js
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -9,13 +8,15 @@ dotenv.config();
 const app = express();
 
 // ===== CORS =====
+const defaultOrigins = [
+  'http://localhost:3000',
+  'https://zero20garage.vercel.app',
+  'https://zero20garage.com.br',
+];
+
 const allowedOrigins = process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
-  : [
-      'http://localhost:3000',
-      'https://zero20garage.vercel.app',
-      'https://zero20garage.com.br',
-    ];
+  ? [...new Set([...process.env.CORS_ORIGIN.split(',').map(o => o.trim()), ...defaultOrigins])]
+  : defaultOrigins;
 
 const corsOptions = {
   origin: (origin, callback) => {
