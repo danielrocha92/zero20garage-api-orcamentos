@@ -14,6 +14,7 @@ const allowedOrigins = process.env.CORS_ORIGIN
   : [
       'http://localhost:3000',
       'https://zero20garage.vercel.app',
+      'https://zero20garage.com.br',
     ];
 
 const corsOptions = {
