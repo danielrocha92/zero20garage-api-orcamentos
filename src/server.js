@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import app from './app.js';
 
 // Define a porta inicial que você deseja usar.
