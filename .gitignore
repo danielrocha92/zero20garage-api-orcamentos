@@ -6,6 +6,7 @@ node_modules/
 
 # Chave de serviço do Firebase (MUITO IMPORTANTE: NUNCA ENVIE ESTE ARQUIVO PARA O GITHUB PÚBLICO)
 src/config/serviceAccountKey.json
+src/config/firebase-service-account.json
 
 # Logs de depuração do npm
 npm-debug.log*
